@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 import './DataTable.css';
 
 const CardTable = () => {
@@ -143,9 +144,8 @@ const CardTable = () => {
                                     </td>
                                     <td>
                                         <div className="action-buttons">
-                                            <button className="action-btn view" title="View Details">👁️</button>
-                                            <button className="action-btn edit" title="Edit Wallet">✏️</button>
-                                            <button className="action-btn delete" onClick={() => handleDelete(wallet.id)} title="Remove Wallet">🗑️</button>
+                                            <button className="action-btn edit" title="Edit Wallet"><FiEdit2 /></button>
+                                            <button className="action-btn delete" onClick={() => handleDelete(wallet.id)} title="Remove Wallet"><FiTrash2 /></button>
                                         </div>
                                     </td>
                                 </tr>
