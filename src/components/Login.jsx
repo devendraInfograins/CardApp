@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { SiBlockchaindotcom } from 'react-icons/si';
 import { FiMail, FiLock, FiShield, FiZap } from 'react-icons/fi';
 import { RiSecurePaymentLine } from 'react-icons/ri';
+import { authAPI } from '../services/api';
 import './Login.css';
 
 const Login = ({ onLogin }) => {
@@ -12,26 +13,27 @@ const Login = ({ onLogin }) => {
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
 
-        // Simulate authentication (replace with real API call)
-        setTimeout(() => {
-            // Demo credentials - you can replace this with real authentication
-            if (formData.email && formData.password) {
-                const userData = {
-                    email: formData.email,
-                    name: 'Admin User',
-                    role: 'Super Admin'
-                };
-                onLogin(userData);
-            } else {
-                setError('Please enter both email and password');
-                setIsLoading(false);
+        try {
+            // Call the API service
+            const response = await authAPI.login(formData);
+
+            // Store token if provided
+            if (response.data.token) {
+                localStorage.setItem('authToken', response.data.token);
             }
-        }, 1000);
+
+            // Call parent callback with user data
+            onLogin(response.data.user);
+        } catch (err) {
+            setError(err.response?.data?.message || err.message || 'Login failed. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleChange = (e) => {
