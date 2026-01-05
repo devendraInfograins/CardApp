@@ -1,57 +1,114 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { walletAPI } from '../services/api';
+import Swal from 'sweetalert2';
+import toast from 'react-hot-toast';
 import './DataTable.css';
 
 const CardTable = () => {
-    const [wallets, setWallets] = useState([
-        { id: 1, walletAddress: '0x742d35Cc6634C0532925a3b844Bc9e75', owner: 'Alice Johnson', network: 'Ethereum', balance: 12.5, type: 'Hot Wallet', status: 'active', created: '2024-01-15' },
-        { id: 2, walletAddress: '0x8c9e2b1dF3421Aa8976Bc54e7D890123', owner: 'Bob Smith', network: 'Ethereum', balance: 8.3, type: 'Hot Wallet', status: 'active', created: '2024-02-20' },
-        { id: 3, walletAddress: '0x5a3f7e6c8d9A12Bc3456Def7890Ab123', owner: 'Charlie Davis', network: 'Polygon', balance: 45.7, type: 'Cold Wallet', status: 'active', created: '2023-12-10' },
-        { id: 4, walletAddress: '0x1d2e9a4bC567890Def1234Abc5678901', owner: 'Diana Prince', network: 'BSC', balance: 5.2, type: 'Hot Wallet', status: 'active', created: '2024-03-05' },
-        { id: 5, walletAddress: '0x6f8a5c3dE789012Abc345Def67890123', owner: 'Ethan Hunt', network: 'Ethereum', balance: 0.8, type: 'Hot Wallet', status: 'locked', created: '2024-01-22' },
-        { id: 6, walletAddress: '0x9b7c4d2aF123456Bcd789012Def34567', owner: 'Fiona Gallagher', network: 'Arbitrum', balance: 23.4, type: 'Hot Wallet', status: 'active', created: '2024-04-12' },
-        { id: 7, walletAddress: '0x3e5f6a8bC234567Cde890123Abc45678', owner: 'George Wilson', network: 'Ethereum', balance: 67.9, type: 'Cold Wallet', status: 'active', created: '2023-11-08' },
-        { id: 8, walletAddress: '0x2d4e7f9aC345678Def901234Bcd56789', owner: 'Hannah Montana', network: 'Optimism', balance: 11.6, type: 'Hot Wallet', status: 'active', created: '2024-05-18' },
-    ]);
+    const [cardRequests, setCardRequests] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        fetchCardRequests();
+    }, []);
+
+    const fetchCardRequests = async () => {
+        try {
+            setIsLoading(true);
+            const response = await walletAPI.getCardRequests();
+            // The API returns data in response.data.reqList
+            const data = response.data.reqList || [];
+            setCardRequests(data);
+            setError(null);
+        } catch (err) {
+            setError('Failed to fetch card requests');
+            console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterNetwork, setFilterNetwork] = useState('all');
     const [filterStatus, setFilterStatus] = useState('all');
     const [showAddModal, setShowAddModal] = useState(false);
+    const [showAssignModal, setShowAssignModal] = useState(false);
+    const [selectedRequest, setSelectedRequest] = useState(null);
+    const [cardNumber, setCardNumber] = useState('');
 
-    const filteredWallets = wallets.filter(wallet => {
-        const matchesSearch = wallet.walletAddress.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            wallet.owner.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesNetwork = filterNetwork === 'all' || wallet.network === filterNetwork;
-        const matchesStatus = filterStatus === 'all' || wallet.status === filterStatus;
-        return matchesSearch && matchesNetwork && matchesStatus;
+    const filteredRequests = cardRequests.filter(req => {
+        const holderName = `${req.cardHolder?.firstName || ''} ${req.cardHolder?.lastName || ''}`.toLowerCase();
+        const matchesSearch = req.merchantOrderNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            holderName.includes(searchTerm.toLowerCase()) ||
+            req.cardHolder?.email?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = filterStatus === 'all' || req.status === filterStatus;
+        return matchesSearch && matchesStatus;
     });
 
     const handleDelete = (id) => {
-        if (confirm('Are you sure you want to remove this wallet?')) {
-            setWallets(wallets.filter(wallet => wallet.id !== id));
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#8b5cf6',
+            cancelButtonColor: '#ef4444',
+            confirmButtonText: 'Yes, remove it!',
+            background: 'var(--bg-secondary)',
+            color: 'var(--text-primary)'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                setCardRequests(cardRequests.filter(req => req._id !== id));
+                toast.success('Request removed successfully');
+            }
+        });
+    };
+
+    const handleAssignClick = (req) => {
+        setSelectedRequest(req);
+        setCardNumber('');
+        setShowAssignModal(true);
+    };
+
+    const handleAssignSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            setIsLoading(true);
+            await walletAPI.approveCardRequest({
+                cardRequestId: selectedRequest._id,
+                merchantOrderNo: selectedRequest.merchantOrderNo,
+                holderId: selectedRequest.holderId,
+                cardTypeId: selectedRequest.cardTypeId,
+                amount: selectedRequest.amount,
+                cardNumber: cardNumber
+            });
+
+            // Update local state
+            setCardRequests(cardRequests.map(req =>
+                req._id === selectedRequest._id ? { ...req, cardId: cardNumber, status: 'APPROVED' } : req
+            ));
+
+            setShowAssignModal(false);
+            toast.success('Card request approved and card assigned successfully!');
+        } catch (err) {
+            console.error(err);
+            toast.error(err.response?.data?.message || 'Failed to approve card request');
+        } finally {
+            setIsLoading(false);
         }
     };
 
     const getStatusBadge = (status) => {
         const statusMap = {
-            'active': 'success',
-            'locked': 'warning',
-            'suspended': 'danger'
+            'APPROVED': 'success',
+            'PENDING': 'warning',
+            'REJECTED': 'danger'
         };
         return statusMap[status] || 'info';
     };
 
-    const getNetworkIcon = (network) => {
-        const iconMap = {
-            'Ethereum': '⟠',
-            'Polygon': '🟣',
-            'BSC': '🟡',
-            'Arbitrum': '🔵',
-            'Optimism': '🔴',
-        };
-        return iconMap[network] || '⛓️';
-    };
+
 
     return (
         <div className="data-table-container">
@@ -60,7 +117,7 @@ const CardTable = () => {
                 <div className="search-container">
                     <input
                         type="text"
-                        placeholder="Search wallets..."
+                        placeholder="Search by order or holder..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="search-input"
@@ -70,31 +127,18 @@ const CardTable = () => {
 
                 <div className="filter-actions">
                     <select
-                        value={filterNetwork}
-                        onChange={(e) => setFilterNetwork(e.target.value)}
-                        className="filter-select"
-                    >
-                        <option value="all">All Networks</option>
-                        <option value="Ethereum">Ethereum</option>
-                        <option value="Polygon">Polygon</option>
-                        <option value="BSC">BSC</option>
-                        <option value="Arbitrum">Arbitrum</option>
-                        <option value="Optimism">Optimism</option>
-                    </select>
-
-                    <select
                         value={filterStatus}
                         onChange={(e) => setFilterStatus(e.target.value)}
                         className="filter-select"
                     >
                         <option value="all">All Status</option>
-                        <option value="active">Active</option>
-                        <option value="locked">Locked</option>
-                        <option value="suspended">Suspended</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="REJECTED">Rejected</option>
                     </select>
 
                     <button className="btn-primary" onClick={() => setShowAddModal(true)}>
-                        + Add Wallet
+                        + New Request
                     </button>
                 </div>
             </div>
@@ -106,46 +150,60 @@ const CardTable = () => {
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Wallet Address</th>
-                                <th>Owner</th>
-                                <th>Network</th>
-                                <th>Type</th>
-                                <th>Balance</th>
-                                <th>Created</th>
+                                <th>Order No</th>
+                                <th>Holder Name</th>
+                                <th>Email</th>
+                                <th>Amount</th>
+                                <th>Card ID</th>
                                 <th>Status</th>
+                                <th>Created At</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredWallets.map((wallet) => (
-                                <tr key={wallet.id}>
-                                    <td>#{wallet.id}</td>
+                            {isLoading ? (
+                                <tr><td colSpan="9" style={{ textAlign: 'center', padding: '2rem' }}>Loading...</td></tr>
+                            ) : error ? (
+                                <tr><td colSpan="9" style={{ textAlign: 'center', padding: '2rem', color: 'var(--error)' }}>{error}</td></tr>
+                            ) : filteredRequests.map((req) => (
+                                <tr key={req._id}>
                                     <td>
-                                        <div className="car-cell">
-                                            <div className="car-icon">{getNetworkIcon(wallet.network)}</div>
-                                            <span className="wallet-address" title={wallet.walletAddress}>
-                                                {wallet.walletAddress.slice(0, 6)}...{wallet.walletAddress.slice(-4)}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td>{wallet.owner}</td>
-                                    <td>
-                                        <span className="category-badge">{wallet.network}</span>
-                                    </td>
-                                    <td>{wallet.type}</td>
-                                    <td>
-                                        <span className="price-tag">{wallet.balance.toFixed(2)} ETH</span>
-                                    </td>
-                                    <td>{wallet.created}</td>
-                                    <td>
-                                        <span className={`badge badge-${getStatusBadge(wallet.status)}`}>
-                                            {wallet.status}
+                                        <span className="id-badge" title={req._id}>
+                                            {req._id.slice(-6)}
                                         </span>
                                     </td>
                                     <td>
+                                        <span className="wallet-address" title={req.merchantOrderNo}>
+                                            {req.merchantOrderNo.slice(0, 10)}...
+                                        </span>
+                                    </td>
+                                    <td>{req.cardHolder?.firstName} {req.cardHolder?.lastName}</td>
+                                    <td>{req.cardHolder?.email}</td>
+                                    <td>
+                                        <span className="price-tag">${req.amount}</span>
+                                    </td>
+                                    <td>
+                                        <span className="wallet-address" title={req.cardId}>
+                                            {req.cardId ? `${req.cardId.slice(0, 10)}...` : 'N/A'}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span className={`badge badge-${getStatusBadge(req.status)}`}>
+                                            {req.status}
+                                        </span>
+                                    </td>
+                                    <td>{new Date(req.createdAt).toLocaleDateString()}</td>
+                                    <td>
                                         <div className="action-buttons">
-                                            <button className="action-btn edit" title="Edit Wallet"><FiEdit2 /></button>
-                                            <button className="action-btn delete" onClick={() => handleDelete(wallet.id)} title="Remove Wallet"><FiTrash2 /></button>
+                                            <button
+                                                className="btn-action-primary"
+                                                onClick={() => handleAssignClick(req)}
+                                                title="Assign Card"
+                                            >
+                                                Assign Card
+                                            </button>
+                                            <button className="action-btn edit" title="Edit Request"><FiEdit2 /></button>
+                                            <button className="action-btn delete" onClick={() => handleDelete(req._id)} title="Remove Request"><FiTrash2 /></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -153,9 +211,9 @@ const CardTable = () => {
                         </tbody>
                     </table>
 
-                    {filteredWallets.length === 0 && (
+                    {filteredRequests.length === 0 && (
                         <div className="empty-state">
-                            <p>No wallets found matching your search criteria</p>
+                            <p>No card requests found matching your search criteria</p>
                         </div>
                     )}
                 </div>
@@ -164,20 +222,20 @@ const CardTable = () => {
             {/* Stats Footer */}
             <div className="table-stats glass">
                 <div className="stat-item">
-                    <span className="stat-label">Total Wallets:</span>
-                    <span className="stat-value">{wallets.length}</span>
+                    <span className="stat-label">Total Requests:</span>
+                    <span className="stat-value">{cardRequests.length}</span>
                 </div>
                 <div className="stat-item">
-                    <span className="stat-label">Active:</span>
-                    <span className="stat-value">{wallets.filter(w => w.status === 'active').length}</span>
+                    <span className="stat-label">Approved:</span>
+                    <span className="stat-value">{cardRequests.filter(r => r.status === 'APPROVED').length}</span>
                 </div>
                 <div className="stat-item">
-                    <span className="stat-label">Total Balance:</span>
-                    <span className="stat-value">{wallets.reduce((sum, w) => sum + w.balance, 0).toFixed(2)} ETH</span>
+                    <span className="stat-label">Total Amount:</span>
+                    <span className="stat-value">${cardRequests.reduce((sum, r) => sum + r.amount, 0).toLocaleString()}</span>
                 </div>
                 <div className="stat-item">
                     <span className="stat-label">Showing:</span>
-                    <span className="stat-value">{filteredWallets.length}</span>
+                    <span className="stat-value">{filteredRequests.length}</span>
                 </div>
             </div>
 
@@ -186,42 +244,56 @@ const CardTable = () => {
                 <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
                     <div className="modal-content glass-strong" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h3>Add New Wallet</h3>
+                            <h3>New Card Request</h3>
                             <button className="close-btn" onClick={() => setShowAddModal(false)}>×</button>
                         </div>
                         <form className="modal-form">
                             <div className="form-row">
                                 <div className="form-group">
-                                    <label>Wallet Address</label>
-                                    <input type="text" placeholder="0x..." />
+                                    <label>Holder ID</label>
+                                    <input type="text" placeholder="e.g., 155317" />
                                 </div>
                                 <div className="form-group">
-                                    <label>Owner Name</label>
-                                    <input type="text" placeholder="e.g., John Doe" />
-                                </div>
-                            </div>
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label>Network</label>
-                                    <select>
-                                        <option>Ethereum</option>
-                                        <option>Polygon</option>
-                                        <option>BSC</option>
-                                        <option>Arbitrum</option>
-                                        <option>Optimism</option>
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label>Wallet Type</label>
-                                    <select>
-                                        <option>Hot Wallet</option>
-                                        <option>Cold Wallet</option>
-                                    </select>
+                                    <label>Amount</label>
+                                    <input type="number" placeholder="e.g., 20" />
                                 </div>
                             </div>
                             <div className="modal-actions">
                                 <button type="button" className="btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
-                                <button type="submit" className="btn-primary">Add Wallet</button>
+                                <button type="submit" className="btn-primary">Create Request</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+            {/* Assign Card Modal */}
+            {showAssignModal && (
+                <div className="modal-overlay" onClick={() => setShowAssignModal(false)}>
+                    <div className="modal-content glass-strong" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>Assign Card</h3>
+                            <button className="close-btn" onClick={() => setShowAssignModal(false)}>×</button>
+                        </div>
+                        <div className="modal-info">
+                            <p><strong>Order:</strong> {selectedRequest?.merchantOrderNo}</p>
+                            <p><strong>Holder:</strong> {selectedRequest?.cardHolder?.firstName} {selectedRequest?.cardHolder?.lastName}</p>
+                        </div>
+                        <form className="modal-form" onSubmit={handleAssignSubmit}>
+                            <div className="form-group">
+                                <label>Card Number</label>
+                                <input
+                                    type="text"
+                                    placeholder="Enter Card Number to assign"
+                                    value={cardNumber}
+                                    onChange={(e) => setCardNumber(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="modal-actions">
+                                <button type="button" className="btn-secondary" onClick={() => setShowAssignModal(false)} disabled={isLoading}>Cancel</button>
+                                <button type="submit" className="btn-primary" disabled={isLoading}>
+                                    {isLoading ? 'Processing...' : 'Confirm Assignment'}
+                                </button>
                             </div>
                         </form>
                     </div>

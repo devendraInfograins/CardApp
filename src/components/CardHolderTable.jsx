@@ -1,34 +1,79 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { FiSearch, FiEye, FiEdit2, FiTrash2, FiPlus, FiX } from 'react-icons/fi';
+import { walletHolderAPI } from '../services/api';
+import Swal from 'sweetalert2';
+import toast from 'react-hot-toast';
 import './DataTable.css';
 
 const CardHolderTable = () => {
-    const [walletHolders, setWalletHolders] = useState([
-        { id: 1, name: 'Alice Johnson', walletAddress: '0x742d35Cc6634C0532925a3b844Bc9e7595445678', email: 'alice@example.com', status: 'active', joined: '2024-01-15', totalTxns: 145, balance: 12.5 },
-        { id: 2, name: 'Bob Smith', walletAddress: '0x8c9e2b1dF3421Aa8976Bc54e7D8901234567890a', email: 'bob@example.com', status: 'active', joined: '2024-02-20', totalTxns: 89, balance: 8.3 },
-        { id: 3, name: 'Charlie Davis', walletAddress: '0x5a3f7e6c8d9A12Bc3456Def7890Ab1234567Cdef', email: 'charlie@example.com', status: 'active', joined: '2023-12-10', totalTxns: 234, balance: 45.7 },
-        { id: 4, name: 'Diana Prince', walletAddress: '0x1d2e9a4bC567890Def1234Abc567890123456789', email: 'diana@example.com', status: 'active', joined: '2024-03-05', totalTxns: 67, balance: 5.2 },
-        { id: 5, name: 'Ethan Hunt', walletAddress: '0x6f8a5c3dE789012Abc345Def678901234567Ab12', email: 'ethan@example.com', status: 'inactive', joined: '2024-01-22', totalTxns: 12, balance: 0.8 },
-        { id: 6, name: 'Fiona Gallagher', walletAddress: '0x9b7c4d2aF123456Bcd789012Def345678901Abcd', email: 'fiona@example.com', status: 'active', joined: '2024-04-12', totalTxns: 178, balance: 23.4 },
-        { id: 7, name: 'George Wilson', walletAddress: '0x3e5f6a8bC234567Cde890123Abc456789012Bcde', email: 'george@example.com', status: 'active', joined: '2023-11-08', totalTxns: 312, balance: 67.9 },
-        { id: 8, name: 'Hannah Montana', walletAddress: '0x2d4e7f9aC345678Def901234Bcd567890123Cdef', email: 'hannah@example.com', status: 'active', joined: '2024-05-18', totalTxns: 91, balance: 11.6 },
-    ]);
+    const [walletHolders, setWalletHolders] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        fetchCardHolders();
+    }, []);
+
+    const fetchCardHolders = async () => {
+        try {
+            setIsLoading(true);
+            const response = await walletHolderAPI.getCardHolders();
+            console.log("response", response);
+            // The API returns data in response.data.cardHolders
+            const data = response.data.cardHolders || [];
+            setWalletHolders(data);
+            setError(null);
+        } catch (err) {
+            setError('Failed to fetch card holders');
+            console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [showAddModal, setShowAddModal] = useState(false);
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [selectedHolder, setSelectedHolder] = useState(null);
 
-    const filteredWalletHolders = walletHolders.filter(holder => {
-        const matchesSearch = holder.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            holder.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            holder.walletAddress.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = filterStatus === 'all' || holder.status === filterStatus;
+    const filteredWalletHolders = (Array.isArray(walletHolders) ? walletHolders : []).filter(holder => {
+        const firstName = holder.firstName || '';
+        const lastName = holder.lastName || '';
+        const email = holder.email || '';
+        const mobile = holder.mobile || '';
+
+        const fullName = `${firstName} ${lastName}`.toLowerCase();
+        const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
+            email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            mobile.toString().toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = filterStatus === 'all' || holder.kycStatus === filterStatus;
         return matchesSearch && matchesStatus;
     });
 
     const handleDelete = (id) => {
-        if (confirm('Are you sure you want to remove this wallet holder?')) {
-            setWalletHolders(walletHolders.filter(holder => holder.id !== id));
-        }
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#8b5cf6',
+            cancelButtonColor: '#ef4444',
+            confirmButtonText: 'Yes, remove it!',
+            background: 'var(--bg-secondary)',
+            color: 'var(--text-primary)'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const currentHolders = Array.isArray(walletHolders) ? walletHolders : [];
+                setWalletHolders(currentHolders.filter(holder => holder._id !== id));
+                toast.success('Card holder removed successfully');
+            }
+        });
+    };
+
+    const handleViewClick = (holder) => {
+        setSelectedHolder(holder);
+        setShowViewModal(true);
     };
 
     return (
@@ -43,7 +88,7 @@ const CardHolderTable = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="search-input"
                     />
-                    <span className="search-icon">🔍</span>
+                    <span className="search-icon"><FiSearch /></span>
                 </div>
 
                 <div className="filter-actions">
@@ -53,12 +98,13 @@ const CardHolderTable = () => {
                         className="filter-select"
                     >
                         <option value="all">All Status</option>
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="APPROVED">Approved</option>
+                        <option value="REJECTED">Rejected</option>
                     </select>
 
                     <button className="btn-primary" onClick={() => setShowAddModal(true)}>
-                        + Add Wallet Holder
+                        <FiPlus /> Add Wallet Holder
                     </button>
                 </div>
             </div>
@@ -70,49 +116,50 @@ const CardHolderTable = () => {
                         <thead>
                             <tr>
                                 <th>ID</th>
-                                <th>Name</th>
-                                <th>Wallet Address</th>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>Nationality</th>
                                 <th>Email</th>
-                                <th>Balance (ETH)</th>
-                                <th>Total Txns</th>
-                                <th>Status</th>
-                                <th>Joined</th>
+                                <th>Mobile</th>
+                                <th>KYC Status</th>
+                                <th>Created At</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredWalletHolders.map((holder) => (
-                                <tr key={holder.id}>
-                                    <td>#{holder.id}</td>
+                            {isLoading ? (
+                                <tr><td colSpan="9" style={{ textAlign: 'center', padding: '2rem' }}>Loading...</td></tr>
+                            ) : error ? (
+                                <tr><td colSpan="9" style={{ textAlign: 'center', padding: '2rem', color: 'var(--error)' }}>{error}</td></tr>
+                            ) : filteredWalletHolders.map((holder) => (
+                                <tr key={holder._id}>
                                     <td>
-                                        <div className="user-cell">
-                                            <div className="user-avatar">{holder.name.charAt(0)}</div>
-                                            <span className="user-name">{holder.name}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span className="wallet-address" title={holder.walletAddress}>
-                                            {holder.walletAddress.slice(0, 6)}...{holder.walletAddress.slice(-4)}
+                                        <span className="id-badge" title={holder._id}>
+                                            {holder._id.slice(-6)}
                                         </span>
                                     </td>
+                                    <td>{holder.firstName}</td>
+                                    <td>{holder.lastName}</td>
+                                    <td>{holder.nationality}</td>
                                     <td>{holder.email}</td>
+                                    <td>{holder.areaCode} {holder.mobile}</td>
                                     <td>
-                                        <span className="price-tag">{holder.balance.toFixed(2)} ETH</span>
-                                    </td>
-                                    <td>
-                                        <span className="booking-count">{holder.totalTxns}</span>
-                                    </td>
-                                    <td>
-                                        <span className={`badge badge-${holder.status === 'active' ? 'success' : 'warning'}`}>
-                                            {holder.status}
+                                        <span className={`badge badge-${holder.kycStatus === 'PENDING' ? 'warning' : holder.kycStatus === 'APPROVED' ? 'success' : 'danger'}`}>
+                                            {holder.kycStatus}
                                         </span>
                                     </td>
-                                    <td>{holder.joined}</td>
+                                    <td>{new Date(holder.createdAt).toLocaleDateString()}</td>
                                     <td>
                                         <div className="action-buttons">
-                                            <button className="action-btn view" title="View Details">👁️</button>
-                                            <button className="action-btn edit" title="Edit Wallet Holder">✏️</button>
-                                            <button className="action-btn delete" onClick={() => handleDelete(holder.id)} title="Remove Wallet Holder">🗑️</button>
+                                            <button
+                                                className="action-btn view"
+                                                title="View Details"
+                                                onClick={() => handleViewClick(holder)}
+                                            >
+                                                <FiEye />
+                                            </button>
+                                            <button className="action-btn edit" title="Edit Card Holder"><FiEdit2 /></button>
+                                            <button className="action-btn delete" onClick={() => handleDelete(holder._id)} title="Remove Card Holder"><FiTrash2 /></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -132,15 +179,15 @@ const CardHolderTable = () => {
             <div className="table-stats glass">
                 <div className="stat-item">
                     <span className="stat-label">Total Holders:</span>
-                    <span className="stat-value">{walletHolders.length}</span>
+                    <span className="stat-value">{Array.isArray(walletHolders) ? walletHolders.length : 0}</span>
                 </div>
                 <div className="stat-item">
-                    <span className="stat-label">Active:</span>
-                    <span className="stat-value">{walletHolders.filter(h => h.status === 'active').length}</span>
+                    <span className="stat-label">Pending KYC:</span>
+                    <span className="stat-value">{Array.isArray(walletHolders) ? walletHolders.filter(h => h.kycStatus === 'PENDING').length : 0}</span>
                 </div>
                 <div className="stat-item">
-                    <span className="stat-label">Total Balance:</span>
-                    <span className="stat-value">{walletHolders.reduce((sum, h) => sum + h.balance, 0).toFixed(2)} ETH</span>
+                    <span className="stat-label">Approved:</span>
+                    <span className="stat-value">{Array.isArray(walletHolders) ? walletHolders.filter(h => h.kycStatus === 'APPROVED').length : 0}</span>
                 </div>
                 <div className="stat-item">
                     <span className="stat-label">Showing:</span>
@@ -148,13 +195,135 @@ const CardHolderTable = () => {
                 </div>
             </div>
 
+            {/* View Details Modal */}
+            {showViewModal && (
+                <div className="modal-overlay" onClick={() => setShowViewModal(false)}>
+                    <div className="modal-content glass-strong" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>Card Holder Details</h3>
+                            <button className="close-btn" onClick={() => setShowViewModal(false)}><FiX /></button>
+                        </div>
+                        <div className="details-content">
+                            <div className="detail-section">
+                                <h4>Personal Information</h4>
+                                <div className="detail-row">
+                                    <span className="detail-label">Full Name</span>
+                                    <span className="detail-value">{selectedHolder?.firstName} {selectedHolder?.lastName}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Gender</span>
+                                    <span className="detail-value">{selectedHolder?.gender === 'M' ? 'Male' : selectedHolder?.gender === 'F' ? 'Female' : selectedHolder?.gender || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Birthday</span>
+                                    <span className="detail-value">{selectedHolder?.birthday || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Nationality</span>
+                                    <span className="detail-value">{selectedHolder?.nationality}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Email</span>
+                                    <span className="detail-value">{selectedHolder?.email}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Mobile</span>
+                                    <span className="detail-value">{selectedHolder?.areaCode} {selectedHolder?.mobile}</span>
+                                </div>
+                            </div>
+
+                            <div className="detail-section">
+                                <h4>Address Details</h4>
+                                <div className="detail-row">
+                                    <span className="detail-label">Address</span>
+                                    <span className="detail-value">{selectedHolder?.address || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Town/City</span>
+                                    <span className="detail-value">{selectedHolder?.town || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Post Code</span>
+                                    <span className="detail-value">{selectedHolder?.postCode || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Country</span>
+                                    <span className="detail-value">{selectedHolder?.country || 'N/A'}</span>
+                                </div>
+                            </div>
+
+                            <div className="detail-section">
+                                <h4>Employment & Financials</h4>
+                                <div className="detail-row">
+                                    <span className="detail-label">Occupation</span>
+                                    <span className="detail-value">{selectedHolder?.occupation?.replace(/_/g, ' ') || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Annual Salary</span>
+                                    <span className="detail-value">{selectedHolder?.annualSalary || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Account Purpose</span>
+                                    <span className="detail-value">{selectedHolder?.accountPurpose || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Monthly Volume</span>
+                                    <span className="detail-value">{selectedHolder?.expectedMonthlyVolume || 'N/A'}</span>
+                                </div>
+                            </div>
+
+                            <div className="detail-section">
+                                <h4>Identity Verification</h4>
+                                <div className="detail-row">
+                                    <span className="detail-label">ID Type</span>
+                                    <span className="detail-value">{selectedHolder?.idType || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">ID Number</span>
+                                    <span className="detail-value">{selectedHolder?.idNumber || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Issue Date</span>
+                                    <span className="detail-value">{selectedHolder?.issueDate || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">KYC Status</span>
+                                    <span className={`badge badge-${selectedHolder?.kycStatus === 'PENDING' ? 'warning' : selectedHolder?.kycStatus === 'APPROVED' ? 'success' : 'danger'}`}>
+                                        {selectedHolder?.kycStatus}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="detail-section">
+                                <h4>System Information</h4>
+                                <div className="detail-row">
+                                    <span className="detail-label">Holder Model</span>
+                                    <span className="detail-value">{selectedHolder?.cardHolderModel || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Created At</span>
+                                    <span className="detail-value">{new Date(selectedHolder?.createdAt).toLocaleString()}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">System ID</span>
+                                    <span className="detail-value" style={{ fontSize: '0.8rem', opacity: 0.7 }}>{selectedHolder?._id}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="modal-actions">
+                            <button className="btn-primary" onClick={() => setShowViewModal(false)}>Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Add Wallet Holder Modal */}
             {showAddModal && (
                 <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
                     <div className="modal-content glass-strong" onClick={(e) => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>Add New Wallet Holder</h3>
-                            <button className="close-btn" onClick={() => setShowAddModal(false)}>×</button>
+                            <button className="close-btn" onClick={() => setShowAddModal(false)}><FiX /></button>
                         </div>
                         <form className="modal-form">
                             <div className="form-group">

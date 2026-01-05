@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { analyticsAPI } from '../services/api';
 import './Analytics.css';
 
 const Analytics = () => {
@@ -8,42 +9,43 @@ const Analytics = () => {
         activeWallets: 0,
         totalGasFees: 0,
     });
+    const [volumeData, setVolumeData] = useState([]);
+    const [topWallets, setTopWallets] = useState([]);
+    const [recentTransactions, setRecentTransactions] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        // Simulate loading stats
-        setStats({
-            totalVolume: 12543.78, // in ETH
-            totalTransactions: 8342,
-            activeWallets: 1256,
-            totalGasFees: 45.32, // in ETH
-        });
+        fetchAnalyticsData();
     }, []);
 
-    const volumeData = [
-        { month: 'Jan', volume: 1250.5 },
-        { month: 'Feb', volume: 1580.8 },
-        { month: 'Mar', volume: 2120.3 },
-        { month: 'Apr', volume: 1890.6 },
-        { month: 'May', volume: 2540.2 },
-        { month: 'Jun', volume: 2161.4 },
-    ];
+    const fetchAnalyticsData = async () => {
+        try {
+            setIsLoading(true);
+            const [statsRes, volumeRes, topWalletsRes, recentTxnsRes] = await Promise.all([
+                analyticsAPI.getStats(),
+                analyticsAPI.getVolumeData(),
+                analyticsAPI.getTopWallets(),
+                analyticsAPI.getRecentTransactions()
+            ]);
 
-    const topWallets = [
-        { address: '0x742d...3f8a', transactions: 145, volume: 2250.5 },
-        { address: '0x8c9e...2b1d', transactions: 128, volume: 1980.3 },
-        { address: '0x5a3f...7e6c', transactions: 112, volume: 1820.7 },
-        { address: '0x1d2e...9a4b', transactions: 98, volume: 1650.2 },
-        { address: '0x6f8a...5c3d', transactions: 85, volume: 1260.8 },
-    ];
+            setStats(statsRes.data.stats || statsRes.data.data || statsRes.data);
+            setVolumeData(volumeRes.data.volumeData || volumeRes.data.data || (Array.isArray(volumeRes.data) ? volumeRes.data : []));
+            setTopWallets(topWalletsRes.data.topWallets || topWalletsRes.data.data || (Array.isArray(topWalletsRes.data) ? topWalletsRes.data : []));
+            setRecentTransactions(recentTxnsRes.data.recentTransactions || recentTxnsRes.data.data || (Array.isArray(recentTxnsRes.data) ? recentTxnsRes.data : []));
+            setError(null);
+        } catch (err) {
+            setError('Failed to fetch analytics data');
+            console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-    const recentTransactions = [
-        { id: 1, from: '0x742d...3f8a', to: '0x8c9e...2b1d', amount: 2.5, status: 'confirmed', blockNumber: 18234567 },
-        { id: 2, from: '0x5a3f...7e6c', to: '0x1d2e...9a4b', amount: 0.75, status: 'confirmed', blockNumber: 18234566 },
-        { id: 3, from: '0x6f8a...5c3d', to: '0x742d...3f8a', amount: 1.2, status: 'pending', blockNumber: 18234565 },
-        { id: 4, from: '0x8c9e...2b1d', to: '0x5a3f...7e6c', amount: 3.8, status: 'confirmed', blockNumber: 18234564 },
-    ];
+    if (isLoading) return <div className="analytics-container"><div className="glass fade-in" style={{ padding: '2rem', textAlign: 'center' }}>Loading Analytics...</div></div>;
+    if (error) return <div className="analytics-container"><div className="glass fade-in" style={{ padding: '2rem', textAlign: 'center', color: 'var(--error)' }}>{error}</div></div>;
 
-    const maxVolume = Math.max(...volumeData.map(d => d.volume));
+    const maxVolume = volumeData.length > 0 ? Math.max(...volumeData.map(d => d.volume)) : 0;
 
     return (
         <div className="analytics-container">
@@ -139,7 +141,7 @@ const Analytics = () => {
                                 <div className="car-progress">
                                     <div
                                         className="progress-bar"
-                                        style={{ width: `${(wallet.transactions / topWallets[0].transactions) * 100}%` }}
+                                        style={{ width: `${topWallets.length > 0 ? (wallet.transactions / topWallets[0].transactions) * 100 : 0}%` }}
                                     ></div>
                                 </div>
                             </div>

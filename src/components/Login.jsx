@@ -2,7 +2,10 @@ import { useState } from 'react';
 import { SiBlockchaindotcom } from 'react-icons/si';
 import { FiMail, FiLock, FiShield, FiZap } from 'react-icons/fi';
 import { RiSecurePaymentLine } from 'react-icons/ri';
+import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { authAPI } from '../services/api';
+import toast from 'react-hot-toast';
+
 import './Login.css';
 
 const Login = ({ onLogin }) => {
@@ -10,6 +13,8 @@ const Login = ({ onLogin }) => {
         email: '',
         password: ''
     });
+    const [showPassword, setShowPassword] = useState(false);
+
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -21,16 +26,28 @@ const Login = ({ onLogin }) => {
         try {
             // Call the API service
             const response = await authAPI.login(formData);
+            console.log(response);
 
             // Store token if provided
-            if (response.data.token) {
-                localStorage.setItem('authToken', response.data.token);
+            const token = response.data.token || response.data.data?.token;
+            if (token) {
+                localStorage.setItem('authToken', token);
             }
 
             // Call parent callback with user data
-            onLogin(response.data.user);
+            // Try to find user in response.data.user, response.data.data.user, or fallback to a default
+            const userData = response.data.user || response.data.data?.user || {
+                email: formData.email,
+                name: 'Admin User',
+                role: 'Super Admin'
+            };
+
+            onLogin(userData);
+            toast.success(`Welcome back, ${userData.name || 'Admin'}!`);
         } catch (err) {
-            setError(err.response?.data?.message || err.message || 'Login failed. Please try again.');
+            const errorMsg = err.response?.data?.message || err.message || 'Login failed. Please try again.';
+            setError(errorMsg);
+            toast.error(errorMsg);
         } finally {
             setIsLoading(false);
         }
@@ -101,8 +118,9 @@ const Login = ({ onLogin }) => {
                             <span className="input-icon">
                                 <FiLock />
                             </span>
+
                             <input
-                                type="password"
+                                type={showPassword ? 'text' : 'password'}
                                 id="password"
                                 name="password"
                                 value={formData.password}
@@ -110,8 +128,18 @@ const Login = ({ onLogin }) => {
                                 placeholder="Enter your password"
                                 required
                             />
+
+                            <span
+                                className="password-toggle"
+                                onClick={() => setShowPassword(!showPassword)}
+                                role="button"
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                            >
+                                {showPassword ? <FiEyeOff /> : <FiEye />}
+                            </span>
                         </div>
                     </div>
+
 
                     <div className="form-options">
                         <label className="checkbox-label">
@@ -137,14 +165,8 @@ const Login = ({ onLogin }) => {
                     </button>
 
                     <div className="demo-section">
-                        <p className="demo-text">Demo Access:</p>
-                        <button
-                            type="button"
-                            className="btn-demo"
-                            onClick={handleQuickLogin}
-                        >
-                            🚀 Quick Login (Demo)
-                        </button>
+                        {/* <p className="demo-text">Demo Access:</p> */}
+
                     </div>
                 </form>
             </div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FiBarChart2, FiUser, FiCreditCard, FiActivity, FiLogOut } from 'react-icons/fi';
+import { FiBarChart2, FiUser, FiCreditCard, FiActivity, FiLogOut, FiSun, FiMoon } from 'react-icons/fi';
 import { SiBlockchaindotcom } from 'react-icons/si';
 import CardHolderTable from './CardHolderTable';
 import CardTable from './CardTable';
@@ -7,14 +7,14 @@ import TransactionsTable from './TransactionsTable';
 import Analytics from './Analytics';
 import './AdminDashboard.css';
 
-const AdminDashboard = ({ onLogout }) => {
+const AdminDashboard = ({ onLogout, theme, toggleTheme }) => {
     const [activeSection, setActiveSection] = useState('analytics');
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
     const navItems = [
         { id: 'analytics', label: 'Analytics', icon: FiBarChart2 },
         { id: 'cardholder', label: 'Card Holder', icon: FiUser },
-        { id: 'card', label: 'Card', icon: FiCreditCard },
+        { id: 'card', label: 'Card Request', icon: FiCreditCard },
         { id: 'transactions', label: 'View Transaction', icon: FiActivity },
     ];
 
@@ -89,6 +89,13 @@ const AdminDashboard = ({ onLogout }) => {
                     </div>
 
                     <div className="header-right">
+                        <button
+                            className="theme-toggle-btn"
+                            onClick={toggleTheme}
+                            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                        >
+                            {theme === 'dark' ? <FiSun /> : <FiMoon />}
+                        </button>
                         <button className="logout-btn" onClick={handleLogout} title="Logout">
                             <FiLogOut />
                             <span>Logout</span>
@@ -98,7 +105,7 @@ const AdminDashboard = ({ onLogout }) => {
                                 <span>A</span>
                             </div>
                             <div className="admin-info">
-                                <p className="admin-name">Admin User</p>
+                                <p className="admin-name">Admin</p>
                                 <p className="admin-role">Super Admin</p>
                             </div>
                         </div>

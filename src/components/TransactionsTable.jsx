@@ -1,19 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { transactionAPI } from '../services/api';
 import './DataTable.css';
 
 const TransactionsTable = () => {
-    const [transactions, setTransactions] = useState([
-        { id: 1, txHash: '0xa1b2c3d4e5f6789012345678901234567890abcd', from: '0x742d...5678', to: '0x8c9e...0123', amount: 2.5, gasUsed: 21000, gasFee: 0.00084, blockNumber: 18234567, type: 'transfer', status: 'confirmed', timestamp: '2025-12-26 10:30:45' },
-        { id: 2, txHash: '0xb2c3d4e5f67890123456789012345678901abcde', from: '0x5a3f...Ab123', to: '0x1d2e...8901', amount: 0.75, gasUsed: 21000, gasFee: 0.00063, blockNumber: 18234566, type: 'transfer', status: 'confirmed', timestamp: '2025-12-26 09:15:22' },
-        { id: 3, txHash: '0xc3d4e5f678901234567890123456789012abcdef', from: '0x6f8a...0123', to: '0x742d...5678', amount: 1.2, gasUsed: 45000, gasFee: 0.00135, blockNumber: 18234565, type: 'contract', status: 'pending', timestamp: '2025-12-26 08:45:10' },
-        { id: 4, txHash: '0xd4e5f6789012345678901234567890123abcdefg', from: '0x8c9e...0123', to: '0x5a3f...Ab123', amount: 3.8, gasUsed: 21000, gasFee: 0.00084, blockNumber: 18234564, type: 'transfer', status: 'confirmed', timestamp: '2025-12-25 11:20:33' },
-        { id: 5, txHash: '0xe5f67890123456789012345678901234abcdefgh', from: '0x9b7c...4567', to: '0x3e5f...5678', amount: 0.5, gasUsed: 65000, gasFee: 0.00195, blockNumber: 18234563, type: 'swap', status: 'confirmed', timestamp: '2025-12-25 10:05:18' },
-        { id: 6, txHash: '0xf678901234567890123456789012345abcdefghi', from: '0x2d4e...6789', to: '0x742d...5678', amount: 5.0, gasUsed: 21000, gasFee: 0.00084, blockNumber: 18234562, type: 'transfer', status: 'confirmed', timestamp: '2025-12-25 09:30:55' },
-        { id: 7, txHash: '0x6789012345678901234567890123456abcdefghij', from: '0x5a3f...Ab123', to: '0x8c9e...0123', amount: 0.3, gasUsed: 21000, gasFee: 0.00063, blockNumber: 18234561, type: 'transfer', status: 'failed', timestamp: '2025-12-24 08:15:40' },
-        { id: 8, txHash: '0x789012345678901234567890123456789abcdefgh', from: '0x1d2e...8901', to: '0x6f8a...0123', amount: 10.5, gasUsed: 21000, gasFee: 0.00084, blockNumber: 18234560, type: 'transfer', status: 'confirmed', timestamp: '2025-12-24 07:45:12' },
-        { id: 9, txHash: '0x89012345678901234567890123456789abcdefghi', from: '0x3e5f...5678', to: '0x9b7c...4567', amount: 1.8, gasUsed: 52000, gasFee: 0.00156, blockNumber: 18234559, type: 'contract', status: 'confirmed', timestamp: '2025-12-23 06:20:28' },
-        { id: 10, txHash: '0x9012345678901234567890123456789abcdefghij', from: '0x742d...5678', to: '0x2d4e...6789', amount: 7.2, gasUsed: 21000, gasFee: 0.00084, blockNumber: 18234558, type: 'transfer', status: 'confirmed', timestamp: '2025-12-23 05:10:05' },
-    ]);
+    const [transactions, setTransactions] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        fetchTransactions();
+    }, []);
+
+    const fetchTransactions = async () => {
+        try {
+            setIsLoading(true);
+            const response = await transactionAPI.getAll();
+            // Handle both direct array response and nested data array (e.g., response.data.transactions)
+            const data = response.data.transactions || (Array.isArray(response.data) ? response.data : (response.data.data || []));
+            setTransactions(data);
+            setError(null);
+        } catch (err) {
+            setError('Failed to fetch transactions');
+            console.error(err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const [searchTerm, setSearchTerm] = useState('');
     const [filterType, setFilterType] = useState('all');
@@ -124,7 +136,11 @@ const TransactionsTable = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredTransactions.map((txn) => (
+                            {isLoading ? (
+                                <tr><td colSpan="9" style={{ textAlign: 'center', padding: '2rem' }}>Loading...</td></tr>
+                            ) : error ? (
+                                <tr><td colSpan="9" style={{ textAlign: 'center', padding: '2rem', color: 'var(--error)' }}>{error}</td></tr>
+                            ) : filteredTransactions.map((txn) => (
                                 <tr key={txn.id}>
                                     <td>
                                         <span className="booking-count">#{txn.blockNumber}</span>
