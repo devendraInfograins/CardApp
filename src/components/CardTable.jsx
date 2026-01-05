@@ -195,13 +195,15 @@ const CardTable = () => {
                                     <td>{new Date(req.createdAt).toLocaleDateString()}</td>
                                     <td>
                                         <div className="action-buttons">
-                                            <button
-                                                className="btn-action-primary"
-                                                onClick={() => handleAssignClick(req)}
-                                                title="Assign Card"
-                                            >
-                                                Assign Card
-                                            </button>
+                                            {req.status !== 'APPROVED' && (
+                                                <button
+                                                    className="btn-action-primary"
+                                                    onClick={() => handleAssignClick(req)}
+                                                    title="Assign Card"
+                                                >
+                                                    Assign Card
+                                                </button>
+                                            )}
                                             <button className="action-btn edit" title="Edit Request"><FiEdit2 /></button>
                                             <button className="action-btn delete" onClick={() => handleDelete(req._id)} title="Remove Request"><FiTrash2 /></button>
                                         </div>

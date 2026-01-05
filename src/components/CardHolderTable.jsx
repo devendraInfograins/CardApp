@@ -37,17 +37,17 @@ const CardHolderTable = () => {
     const [showViewModal, setShowViewModal] = useState(false);
     const [selectedHolder, setSelectedHolder] = useState(null);
 
-    const filteredWalletHolders = (Array.isArray(walletHolders) ? walletHolders : []).filter(holder => {
-        const firstName = holder.firstName || '';
-        const lastName = holder.lastName || '';
-        const email = holder.email || '';
-        const mobile = holder.mobile || '';
+    const filteredWalletHolders = (Array.isArray(walletHolders) ? walletHolders : [])?.filter(holder => {
+        const firstName = holder?.firstName || '';
+        const lastName = holder?.lastName || '';
+        const email = holder?.email || '';
+        const mobile = holder?.mobile || '';
 
         const fullName = `${firstName} ${lastName}`.toLowerCase();
         const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
             email.toLowerCase().includes(searchTerm.toLowerCase()) ||
             mobile.toString().toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = filterStatus === 'all' || holder.kycStatus === filterStatus;
+        const matchesStatus = filterStatus === 'all' || holder?.kycStatus === filterStatus;
         return matchesSearch && matchesStatus;
     });
 
