@@ -5,10 +5,11 @@ import { RiSecurePaymentLine } from 'react-icons/ri';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import { authAPI } from '../services/api';
 import toast from 'react-hot-toast';
-
+import centraSwoosh2 from '../assets/centra_swoosh_2.png';
+import centraFull from '../assets/centra_full.png';
 import './Login.css';
 
-const Login = ({ onLogin }) => {
+const Login = ({ onLogin, theme }) => {
     const [formData, setFormData] = useState({
         email: '',
         password: ''
@@ -79,11 +80,15 @@ const Login = ({ onLogin }) => {
 
             <div className="login-card glass-strong fade-in">
                 <div className="login-header">
-                    <div className="login-icon">
-                        <SiBlockchaindotcom />
+                    <div className="login-logo-container">
+                        <img
+                            src={theme === 'dark' ? centraSwoosh2 : centraFull}
+                            alt="Centra Logo"
+                            className="login-logo-img"
+                        />
                     </div>
-                    <h1 className="login-title">Blockchain</h1>
-                    <p className="login-subtitle">Secure access to your blockchain dashboard</p>
+                    {/* <h1 className="login-title">Centra</h1> */}
+                    <p className="login-subtitle">Secure access to your Centra dashboard</p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="login-form">

@@ -30,7 +30,7 @@
 .orb-1 {
     width: 500px;
     height: 500px;
-    background: radial-gradient(circle, rgba(139, 92, 246, 0.8) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(234, 179, 8, 0.6) 0%, transparent 70%);
     top: -100px;
     left: -100px;
     animation-delay: 0s;
@@ -39,7 +39,7 @@
 .orb-2 {
     width: 400px;
     height: 400px;
-    background: radial-gradient(circle, rgba(6, 182, 212, 0.8) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(202, 138, 4, 0.6) 0%, transparent 70%);
     bottom: -100px;
     right: -100px;
     animation-delay: 7s;
@@ -48,7 +48,7 @@
 .orb-3 {
     width: 450px;
     height: 450px;
-    background: radial-gradient(circle, rgba(59, 130, 246, 0.8) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(234, 179, 8, 0.4) 0%, transparent 70%);
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -87,19 +87,17 @@
     margin-bottom: 2.5rem;
 }
 
-.login-icon {
-    font-size: 4rem;
-    margin-bottom: 1rem;
+.login-logo-container {
+    margin-bottom: 1.5rem;
     display: flex;
     justify-content: center;
-    color: var(--primary-purple);
-    filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.5));
-    animation: pulse 2s infinite;
 }
 
-.login-icon svg {
-    width: 4rem;
-    height: 4rem;
+.login-logo-img {
+    height: 60px;
+    width: auto;
+    filter: drop-shadow(0 0 20px rgba(234, 179, 8, 0.4));
+    animation: pulse 2s infinite;
 }
 
 .login-title {
@@ -198,7 +196,7 @@
 .input-wrapper input:focus {
     border-color: var(--primary-purple);
     background: var(--bg-tertiary);
-    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+    box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.1);
     outline: none;
 }
 
@@ -253,7 +251,7 @@
     font-weight: 600;
     cursor: pointer;
     transition: all var(--transition-normal);
-    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+    box-shadow: 0 4px 15px rgba(234, 179, 8, 0.3);
     margin-top: 0.5rem;
     display: flex;
     align-items: center;
@@ -263,7 +261,7 @@
 
 .btn-login:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+    box-shadow: 0 6px 20px rgba(234, 179, 8, 0.4);
 }
 
 .btn-login:active:not(:disabled) {

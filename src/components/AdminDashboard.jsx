@@ -5,17 +5,21 @@ import CardHolderTable from './CardHolderTable';
 import CardTable from './CardTable';
 import TransactionsTable from './TransactionsTable';
 import Analytics from './Analytics';
+import centraFull from '../assets/centra_full.png';
+import centraAlpha from '../assets/centra_alpha.png';
+import centraSwoosh1 from '../assets/centra_swoosh_1.png';
+import centraSwoosh2 from '../assets/centra_swoosh_2.png';
 import './AdminDashboard.css';
 
 const AdminDashboard = ({ onLogout, theme, toggleTheme }) => {
-    const [activeSection, setActiveSection] = useState('analytics');
+    const [activeSection, setActiveSection] = useState('cardholder');
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
     const navItems = [
         { id: 'analytics', label: 'Analytics', icon: FiBarChart2 },
         { id: 'cardholder', label: 'Card Holder', icon: FiUser },
         { id: 'card', label: 'Card Request', icon: FiCreditCard },
-        { id: 'transactions', label: 'View Transaction', icon: FiActivity },
+        // { id: 'transactions', label: 'View Transaction', icon: FiActivity },
     ];
 
     const renderContent = () => {
@@ -45,10 +49,15 @@ const AdminDashboard = ({ onLogout, theme, toggleTheme }) => {
             <aside className={`sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
                 <div className="sidebar-header">
                     <div className="logo">
-                        <span className="logo-icon">
-                            <SiBlockchaindotcom />
-                        </span>
-                        {sidebarOpen && <h2 className="logo-text">Blockchain</h2>}
+                        <img
+                            src={theme === 'dark'
+                                ? (!sidebarOpen ? centraSwoosh1 : centraSwoosh2)
+                                : (sidebarOpen ? centraFull : centraAlpha)
+                            }
+                            alt="Centra Logo"
+                            className={`logo-img ${sidebarOpen ? 'full' : 'collapsed'}`}
+                        />
+                        {/* {sidebarOpen && <h2 className="logo-text">Centra</h2>} */}
                     </div>
                 </div>
 
@@ -102,7 +111,7 @@ const AdminDashboard = ({ onLogout, theme, toggleTheme }) => {
                         </button>
                         <div className="admin-profile">
                             <div className="admin-avatar">
-                                <span>A</span>
+                                <img src={centraSwoosh1} alt="Admin" className="avatar-img" />
                             </div>
                             <div className="admin-info">
                                 <p className="admin-name">Admin</p>

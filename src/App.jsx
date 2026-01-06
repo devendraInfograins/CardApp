@@ -7,7 +7,7 @@ import './App.css';
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
 
   // Apply theme to document
   useEffect(() => {
@@ -59,7 +59,7 @@ function App() {
           toggleTheme={toggleTheme}
         />
       ) : (
-        <Login onLogin={handleLogin} />
+        <Login onLogin={handleLogin} theme={theme} />
       )}
     </>
   );
