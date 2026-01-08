@@ -47,9 +47,14 @@ const CardHolderTable = () => {
         const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
             email.toLowerCase().includes(searchTerm.toLowerCase()) ||
             mobile.toString().toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesStatus = filterStatus === 'all' || holder?.kycStatus === filterStatus;
+
+        // Case-insensitive filter logic for statusStr
+        const matchesStatus = filterStatus === 'all' ||
+            holder?.statusStr?.toUpperCase() === filterStatus.toUpperCase();
+
         return matchesSearch && matchesStatus;
     });
+
 
     const handleDelete = (id) => {
         Swal.fire({
@@ -103,9 +108,9 @@ const CardHolderTable = () => {
                         <option value="REJECTED">Rejected</option>
                     </select>
 
-                    <button className="btn-primary" onClick={() => setShowAddModal(true)}>
+                    {/* <button className="btn-primary" onClick={() => setShowAddModal(true)}>
                         <FiPlus /> Add Wallet Holder
-                    </button>
+                    </button> */}
                 </div>
             </div>
 
@@ -144,8 +149,10 @@ const CardHolderTable = () => {
                                     <td>{holder.email}</td>
                                     <td>{holder.areaCode} {holder.mobile}</td>
                                     <td>
-                                        <span className={`badge badge-${holder.kycStatus === 'PENDING' ? 'warning' : holder.kycStatus === 'APPROVED' ? 'success' : 'danger'}`}>
-                                            {holder.kycStatus}
+                                        <span className={`badge badge-${holder.statusStr?.toUpperCase() === 'PENDING' ? 'warning' :
+                                            holder.statusStr?.toUpperCase() === 'APPROVED' ? 'success' : 'danger'
+                                            }`}>
+                                            {holder.statusStr}
                                         </span>
                                     </td>
                                     <td>{new Date(holder.createdAt).toLocaleDateString()}</td>
@@ -158,8 +165,7 @@ const CardHolderTable = () => {
                                             >
                                                 <FiEye />
                                             </button>
-                                            <button className="action-btn edit" title="Edit Card Holder"><FiEdit2 /></button>
-                                            <button className="action-btn delete" onClick={() => handleDelete(holder._id)} title="Remove Card Holder"><FiTrash2 /></button>
+
                                         </div>
                                     </td>
                                 </tr>
@@ -183,11 +189,11 @@ const CardHolderTable = () => {
                 </div>
                 <div className="stat-item">
                     <span className="stat-label">Pending KYC:</span>
-                    <span className="stat-value">{Array.isArray(walletHolders) ? walletHolders.filter(h => h.kycStatus === 'PENDING').length : 0}</span>
+                    <span className="stat-value">{Array.isArray(walletHolders) ? walletHolders.filter(h => h.statusStr?.toUpperCase() === 'PENDING').length : 0}</span>
                 </div>
                 <div className="stat-item">
                     <span className="stat-label">Approved:</span>
-                    <span className="stat-value">{Array.isArray(walletHolders) ? walletHolders.filter(h => h.kycStatus === 'APPROVED').length : 0}</span>
+                    <span className="stat-value">{Array.isArray(walletHolders) ? walletHolders.filter(h => h.statusStr?.toUpperCase() === 'APPROVED').length : 0}</span>
                 </div>
                 <div className="stat-item">
                     <span className="stat-label">Showing:</span>
@@ -288,8 +294,10 @@ const CardHolderTable = () => {
                                 </div>
                                 <div className="detail-row">
                                     <span className="detail-label">KYC Status</span>
-                                    <span className={`badge badge-${selectedHolder?.kycStatus === 'PENDING' ? 'warning' : selectedHolder?.kycStatus === 'APPROVED' ? 'success' : 'danger'}`}>
-                                        {selectedHolder?.kycStatus}
+                                    <span className={`badge badge-${selectedHolder?.statusStr?.toUpperCase() === 'PENDING' ? 'warning' :
+                                        selectedHolder?.statusStr?.toUpperCase() === 'APPROVED' ? 'success' : 'danger'
+                                        }`}>
+                                        {selectedHolder?.statusStr}
                                     </span>
                                 </div>
                             </div>

@@ -42,7 +42,7 @@
 .search-icon {
     position: absolute;
     left: 1rem;
-    top: 50%;
+    top: 58%;
     transform: translateY(-50%);
     font-size: 1.2rem;
     pointer-events: none;
@@ -572,4 +572,39 @@
 .modal-info strong {
     color: var(--text-primary);
     margin-right: 0.5rem;
+}
+
+/* Highlighted Verify Button */
+.btn-verify {
+    background: linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%);
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    animation: pulse-glow 2s infinite;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 0.5rem 1.2rem;
+    color: white;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-verify:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 0 25px rgba(139, 92, 246, 0.7);
+    filter: brightness(1.2);
+}
+
+@keyframes pulse-glow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+    }
+
+    70% {
+        box-shadow: 0 0 0 10px rgba(139, 92, 246, 0);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(139, 92, 246, 0);
+    }
 }

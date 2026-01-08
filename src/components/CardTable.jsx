@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FiEdit2, FiSearch, FiTrash2 } from 'react-icons/fi';
 import { walletAPI } from '../services/api';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
@@ -33,9 +33,7 @@ const CardTable = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [showAddModal, setShowAddModal] = useState(false);
-    const [showAssignModal, setShowAssignModal] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState(null);
-    const [cardNumber, setCardNumber] = useState('');
 
     const filteredRequests = cardRequests.filter(req => {
         const holderName = `${req.cardHolder?.firstName || ''} ${req.cardHolder?.lastName || ''}`.toLowerCase();
@@ -65,47 +63,49 @@ const CardTable = () => {
         });
     };
 
-    const handleAssignClick = (req) => {
-        setSelectedRequest(req);
-        setCardNumber('');
-        setShowAssignModal(true);
-    };
-
-    const handleAssignSubmit = async (e) => {
-        e.preventDefault();
+    const handleVerify = async (req) => {
         try {
-            setIsLoading(true);
-            await walletAPI.approveCardRequest({
-                cardRequestId: selectedRequest._id,
-                merchantOrderNo: selectedRequest.merchantOrderNo,
-                holderId: selectedRequest.holderId,
-                cardTypeId: selectedRequest.cardTypeId,
-                amount: selectedRequest.amount,
-                cardNumber: cardNumber
+            const result = await Swal.fire({
+                title: 'Verify Request?',
+                text: "This will process the request.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#8b5cf6',
+                cancelButtonColor: '#ef4444',
+                confirmButtonText: 'Yes, verify it!',
+                background: 'var(--bg-secondary)',
+                color: 'var(--text-primary)'
             });
 
-            // Update local state
-            setCardRequests(cardRequests.map(req =>
-                req._id === selectedRequest._id ? { ...req, cardId: cardNumber, status: 'APPROVED' } : req
-            ));
+            if (!result.isConfirmed) return;
 
-            setShowAssignModal(false);
-            toast.success('Card request approved and card assigned successfully!');
+            setIsLoading(true);
+            await walletAPI.approveCardRequest({
+                cardRequestId: req._id
+            });
+
+            await fetchCardRequests();
+            toast.success('Request verified successfully!');
         } catch (err) {
             console.error(err);
-            toast.error(err.response?.data?.message || 'Failed to approve card request');
+            toast.error(err.response?.data?.message || 'Failed to verify request');
         } finally {
             setIsLoading(false);
         }
     };
 
+
+
     const getStatusBadge = (status) => {
         const statusMap = {
             'APPROVED': 'success',
             'PENDING': 'warning',
-            'REJECTED': 'danger'
+            'REJECTED': 'danger',
+            'PROCESSING': 'info',
+            'ACTIVE': 'success',
+            'INACTIVE': 'danger'
         };
-        return statusMap[status] || 'info';
+        return statusMap[status?.toUpperCase()] || 'info';
     };
 
 
@@ -122,7 +122,7 @@ const CardTable = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="search-input"
                     />
-                    <span className="search-icon">🔍</span>
+                    <span className="search-icon"><FiSearch /></span>
                 </div>
 
                 <div className="filter-actions">
@@ -133,13 +133,14 @@ const CardTable = () => {
                     >
                         <option value="all">All Status</option>
                         <option value="PENDING">Pending</option>
+                        <option value="PROCESSING">Processing</option>
                         <option value="APPROVED">Approved</option>
                         <option value="REJECTED">Rejected</option>
                     </select>
 
-                    <button className="btn-primary" onClick={() => setShowAddModal(true)}>
+                    {/* <button className="btn-primary" onClick={() => setShowAddModal(true)}>
                         + New Request
-                    </button>
+                    </button> */}
                 </div>
             </div>
 
@@ -154,8 +155,9 @@ const CardTable = () => {
                                 <th>Holder Name</th>
                                 <th>Email</th>
                                 <th>Amount</th>
-                                <th>Card ID</th>
+                                <th>Card Number</th>
                                 <th>Status</th>
+                                <th>Request Status</th>
                                 <th>Created At</th>
                                 <th>Actions</th>
                             </tr>
@@ -192,20 +194,26 @@ const CardTable = () => {
                                             {req.status}
                                         </span>
                                     </td>
+                                    <td>
+                                        <span className={`badge badge-${getStatusBadge(req.cardStatus)}`}>
+                                            {req.cardStatus}
+                                        </span>
+                                    </td>
                                     <td>{new Date(req.createdAt).toLocaleDateString()}</td>
                                     <td>
                                         <div className="action-buttons">
-                                            {req.status !== 'APPROVED' && (
+
+                                            {req.status === "PENDING" && (
                                                 <button
-                                                    className="btn-action-primary"
-                                                    onClick={() => handleAssignClick(req)}
-                                                    title="Assign Card"
+                                                    className="btn-verify"
+                                                    onClick={() => handleVerify(req)}
+                                                    title="Verify Request"
                                                 >
-                                                    Assign Card
+                                                    Verify
                                                 </button>
                                             )}
-                                            <button className="action-btn edit" title="Edit Request"><FiEdit2 /></button>
-                                            <button className="action-btn delete" onClick={() => handleDelete(req._id)} title="Remove Request"><FiTrash2 /></button>
+                                            {/* <button className="action-btn edit" title="Edit Request"><FiEdit2 /></button> */}
+                                            {/* <button className="action-btn delete" onClick={() => handleDelete(req._id)} title="Remove Request"><FiTrash2 /></button> */}
                                         </div>
                                     </td>
                                 </tr>
@@ -268,39 +276,7 @@ const CardTable = () => {
                     </div>
                 </div>
             )}
-            {/* Assign Card Modal */}
-            {showAssignModal && (
-                <div className="modal-overlay" onClick={() => setShowAssignModal(false)}>
-                    <div className="modal-content glass-strong" onClick={(e) => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3>Assign Card</h3>
-                            <button className="close-btn" onClick={() => setShowAssignModal(false)}>×</button>
-                        </div>
-                        <div className="modal-info">
-                            <p><strong>Order:</strong> {selectedRequest?.merchantOrderNo}</p>
-                            <p><strong>Holder:</strong> {selectedRequest?.cardHolder?.firstName} {selectedRequest?.cardHolder?.lastName}</p>
-                        </div>
-                        <form className="modal-form" onSubmit={handleAssignSubmit}>
-                            <div className="form-group">
-                                <label>Card Number</label>
-                                <input
-                                    type="text"
-                                    placeholder="Enter Card Number to assign"
-                                    value={cardNumber}
-                                    onChange={(e) => setCardNumber(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div className="modal-actions">
-                                <button type="button" className="btn-secondary" onClick={() => setShowAssignModal(false)} disabled={isLoading}>Cancel</button>
-                                <button type="submit" className="btn-primary" disabled={isLoading}>
-                                    {isLoading ? 'Processing...' : 'Confirm Assignment'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
+
         </div>
     );
 };
