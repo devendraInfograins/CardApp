@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FiEdit2, FiSearch, FiTrash2 } from 'react-icons/fi';
+import { FiEdit2, FiSearch, FiTrash2, FiEye, FiX } from 'react-icons/fi';
 import { walletAPI } from '../services/api';
 import Swal from 'sweetalert2';
 import toast from 'react-hot-toast';
@@ -33,6 +33,7 @@ const CardTable = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [showAddModal, setShowAddModal] = useState(false);
+    const [showViewModal, setShowViewModal] = useState(false);
     const [selectedRequest, setSelectedRequest] = useState(null);
 
     const filteredRequests = cardRequests.filter(req => {
@@ -96,6 +97,11 @@ const CardTable = () => {
 
 
 
+    const handleViewClick = (req) => {
+        setSelectedRequest(req);
+        setShowViewModal(true);
+    };
+
     const getStatusBadge = (status) => {
         const statusMap = {
             'APPROVED': 'success',
@@ -154,7 +160,7 @@ const CardTable = () => {
                                 <th>Order No</th>
                                 <th>Holder Name</th>
                                 <th>Email</th>
-                                <th>Amount</th>
+                                {/* <th>Amount</th> */}
                                 <th>Card Number</th>
                                 <th>Status</th>
                                 <th>Request Status</th>
@@ -181,9 +187,9 @@ const CardTable = () => {
                                     </td>
                                     <td>{req.cardHolder?.firstName} {req.cardHolder?.lastName}</td>
                                     <td>{req.cardHolder?.email}</td>
-                                    <td>
+                                    {/* <td>
                                         <span className="price-tag">${req.amount}</span>
-                                    </td>
+                                    </td> */}
                                     <td>
                                         <span className="wallet-address" title={req.cardId}>
                                             {req.cardId ? `${req.cardId.slice(0, 10)}...` : 'N/A'}
@@ -212,6 +218,13 @@ const CardTable = () => {
                                                     Verify
                                                 </button>
                                             )}
+                                            <button
+                                                className="action-btn view"
+                                                title="View Details"
+                                                onClick={() => handleViewClick(req)}
+                                            >
+                                                <FiEye />
+                                            </button>
                                             {/* <button className="action-btn edit" title="Edit Request"><FiEdit2 /></button> */}
                                             {/* <button className="action-btn delete" onClick={() => handleDelete(req._id)} title="Remove Request"><FiTrash2 /></button> */}
                                         </div>
@@ -238,10 +251,6 @@ const CardTable = () => {
                 <div className="stat-item">
                     <span className="stat-label">Approved:</span>
                     <span className="stat-value">{cardRequests.filter(r => r.status === 'APPROVED').length}</span>
-                </div>
-                <div className="stat-item">
-                    <span className="stat-label">Total Amount:</span>
-                    <span className="stat-value">${cardRequests.reduce((sum, r) => sum + r.amount, 0).toLocaleString()}</span>
                 </div>
                 <div className="stat-item">
                     <span className="stat-label">Showing:</span>
@@ -273,6 +282,190 @@ const CardTable = () => {
                                 <button type="submit" className="btn-primary">Create Request</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* View Details Modal */}
+            {showViewModal && (
+                <div className="modal-overlay" onClick={() => setShowViewModal(false)}>
+                    <div className="modal-content glass-strong" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>Request Details</h3>
+                            <button className="close-btn" onClick={() => setShowViewModal(false)}><FiX /></button>
+                        </div>
+                        <div className="details-content">
+                            <div className="detail-section">
+                                <h4>Request Information</h4>
+                                <div className="detail-row">
+                                    <span className="detail-label">Request ID</span>
+                                    <span className="detail-value">{selectedRequest?._id}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Order Number</span>
+                                    <span className="detail-value">{selectedRequest?.merchantOrderNo}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Amount</span>
+                                    <span className="detail-value highlight">${selectedRequest?.amount}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Status</span>
+                                    <span className={`badge badge-${getStatusBadge(selectedRequest?.status)}`}>
+                                        {selectedRequest?.status}
+                                    </span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Created At</span>
+                                    <span className="detail-value">{new Date(selectedRequest?.createdAt).toLocaleString()}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Updated At</span>
+                                    <span className="detail-value">{new Date(selectedRequest?.updatedAt).toLocaleString()}</span>
+                                </div>
+                            </div>
+
+                            <div className="detail-section">
+                                <h4>Card Information</h4>
+                                <div className="detail-row">
+                                    <span className="detail-label">Card Number (Full)</span>
+                                    <span className="detail-value">{selectedRequest?.cardNo || 'Not Assigned'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Card ID</span>
+                                    <span className="detail-value">{selectedRequest?.cardId || 'Not Assigned'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Card Type ID</span>
+                                    <span className="detail-value">{selectedRequest?.cardTypeId}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Card Status</span>
+                                    <span className={`badge badge-${getStatusBadge(selectedRequest?.cardStatus)}`}>
+                                        {selectedRequest?.cardStatus}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="detail-section">
+                                <h4>Card Holder Personal Info</h4>
+                                <div className="detail-row">
+                                    <span className="detail-label">Full Name</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.firstName} {selectedRequest?.cardHolder?.lastName}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Email</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.email}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Mobile</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.areaCode} {selectedRequest?.cardHolder?.mobile}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Gender</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.gender === 'M' ? 'Male' : selectedRequest?.cardHolder?.gender === 'F' ? 'Female' : selectedRequest?.cardHolder?.gender || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Birthday</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.birthday || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Nationality</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.nationality}</span>
+                                </div>
+                            </div>
+
+                            <div className="detail-section">
+                                <h4>Address Details</h4>
+                                <div className="detail-row">
+                                    <span className="detail-label">Address</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.address || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Town/City</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.town || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Post Code</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.postCode || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Country</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.country || 'N/A'}</span>
+                                </div>
+                            </div>
+
+                            <div className="detail-section">
+                                <h4>Employment & Financials</h4>
+                                <div className="detail-row">
+                                    <span className="detail-label">Occupation</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.occupation?.replace(/_/g, ' ') || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Annual Salary</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.annualSalary || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Account Purpose</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.accountPurpose || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Monthly Volume</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.expectedMonthlyVolume || 'N/A'}</span>
+                                </div>
+                            </div>
+
+                            <div className="detail-section">
+                                <h4>Identity Verification</h4>
+                                <div className="detail-row">
+                                    <span className="detail-label">ID Type</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.idType || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">ID Number</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.idNumber || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Issue Date</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.issueDate || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Expiry Date</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.idNoExpiryDate || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">KYC Status</span>
+                                    <span className={`badge badge-${selectedRequest?.cardHolder?.statusStr?.toUpperCase() === 'PENDING' ? 'warning' :
+                                        selectedRequest?.cardHolder?.statusStr?.toUpperCase() === 'APPROVED' ? 'success' : 'danger'
+                                        }`}>
+                                        {selectedRequest?.cardHolder?.statusStr}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="detail-section">
+                                <h4>System Information</h4>
+                                <div className="detail-row">
+                                    <span className="detail-label">Holder ID</span>
+                                    <span className="detail-value">{selectedRequest?.holderId || selectedRequest?.cardHolder?.holderId}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Holder Model</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.cardHolderModel || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">IP Address</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.ipAddress || 'N/A'}</span>
+                                </div>
+                                <div className="detail-row">
+                                    <span className="detail-label">Flow Location</span>
+                                    <span className="detail-value">{selectedRequest?.cardHolder?.statusFlowLocation || 'N/A'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="modal-actions">
+                            <button className="btn-primary" onClick={() => setShowViewModal(false)}>Close</button>
+                        </div>
                     </div>
                 </div>
             )}

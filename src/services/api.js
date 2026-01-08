@@ -108,6 +108,16 @@ export const transactionAPI = {
     getByHash: (txHash) => apiClient.get(`/transactions/${txHash}`),
 };
 
+// ==================== Card Type APIs ====================
+
+export const cardTypeAPI = {
+    // Get card info list
+    getCardInfoList: (params = {}) => apiClient.get('/admin/cardInfoList', { params }),
+
+    // Create card info
+    createCardInfo: (data) => apiClient.post('/admin/createCardInfo', data),
+};
+
 // ==================== Analytics APIs ====================
 
 export const analyticsAPI = {

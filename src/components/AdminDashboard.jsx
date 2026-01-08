@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { FiBarChart2, FiUser, FiCreditCard, FiActivity, FiLogOut, FiSun, FiMoon } from 'react-icons/fi';
+import { FiBarChart2, FiUser, FiCreditCard, FiActivity, FiLogOut, FiSun, FiMoon, FiTag } from 'react-icons/fi';
 import { SiBlockchaindotcom } from 'react-icons/si';
 import CardHolderTable from './CardHolderTable';
 import CardTable from './CardTable';
 import TransactionsTable from './TransactionsTable';
+import CardTypePage from './CardTypePage';
 import Analytics from './Analytics';
 import centraFull from '../assets/centra_full.png';
 import centraAlpha from '../assets/centra_alpha.png';
@@ -19,6 +20,7 @@ const AdminDashboard = ({ onLogout, theme, toggleTheme }) => {
         { id: 'analytics', label: 'Analytics', icon: FiBarChart2 },
         { id: 'cardholder', label: 'Card Holder', icon: FiUser },
         { id: 'card', label: 'Card Request', icon: FiCreditCard },
+        { id: 'cardtype', label: 'Card Type', icon: FiTag },
         // { id: 'transactions', label: 'View Transaction', icon: FiActivity },
     ];
 
@@ -28,6 +30,8 @@ const AdminDashboard = ({ onLogout, theme, toggleTheme }) => {
                 return <CardHolderTable />;
             case 'card':
                 return <CardTable />;
+            case 'cardtype':
+                return <CardTypePage />;
             case 'transactions':
                 return <TransactionsTable />;
             case 'analytics':
